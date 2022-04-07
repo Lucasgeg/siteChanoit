@@ -66,3 +66,20 @@ module.exports.deleteUser = async (req, res) => {
     return res.status(500).json({ message: err });
   }
 };
+//test time
+module.exports.time = (req, res) => {
+  UserModel.findById(req.params.id, (err, docs) => {
+    if (err) return res.send(err);
+    else {
+      missionList = docs.mission;
+      missionList.forEach((element) => {
+        getDiff = (startDate, endDate) => {
+          const diff = endDate.getTime() - startDate.getTime();
+          return Math.ceil(diff / (1000 * 3600));
+        };
+        const diff = getDiff(element.beginAt, element.endAt);
+        res.json({ heures_travaille: diff });
+      });
+    }
+  });
+};

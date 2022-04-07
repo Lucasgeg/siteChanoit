@@ -65,6 +65,7 @@ const userSchema = new mongoose.Schema(
           mission: String,
           beginAt: Date,
           endAt: Date,
+          totalHours: Number,
           timestamp: Number,
         },
       ],

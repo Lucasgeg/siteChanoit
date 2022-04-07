@@ -69,6 +69,13 @@ module.exports.addEmployee = (req, res) => {
           (emp) => emp.employeeId === req.body.id
         );
         if (userIsHere) return res.send("Utilisateur déjà présent");
+        const start = new Date(req.body.beginAt);
+        const end = new Date(req.body.endAt);
+        getDiff = (start, end) => {
+          const diff = end.getTime() - start.getTime();
+          return Math.ceil(diff / (1000 * 3600));
+        };
+        const timeWork = getDiff(start, end);
         try {
           missionModel.findByIdAndUpdate(
             req.params.id,
@@ -93,8 +100,9 @@ module.exports.addEmployee = (req, res) => {
               $push: {
                 mission: {
                   mission: req.params.id,
-                  beginAt: req.params.beginAt,
+                  beginAt: req.body.beginAt,
                   endAt: req.body.endAt,
+                  totalHours: timeWork,
                 },
               },
             },
@@ -136,7 +144,6 @@ module.exports.editEmployeeMission = (req, res) => {
     return res.status(404).send(err);
   }
 };
-
 //suppression employé d'une mission
 module.exports.deleteEmployeeMission = (req, res) => {
   if (!ObjectID.isValid(req.params.id))
@@ -195,59 +202,7 @@ module.exports.deleteEmployeeMission = (req, res) => {
         }
       }
     });
-    /* try {
-      missionModel.findByIdAndUpdate(
-        req.params.id,
-        {
-          $pull: employeeToDelete,
-        },
-        { new: true },
-        (err, docs) => {
-          if (!err) res.send(docs);
-          res.send(err);
-        }
-      );
-    } catch (error) {} */
   } catch (error) {
     res.status(400).send(error);
   }
-
-  /* try {
-    missionModel.findById(req.params.id, (err, docs) => {
-      if (!err) {
-        const userList = docs.employeesOnIt;
-        const userIsHere = userList.find(
-          (emp) => emp.employeeId === req.body.id
-        );
-        if (userIsHere) return res.send("Utilisateur déjà présent"); */
-  /*  try {
-    missionModel.findByIdAndUpdate(
-      req.params.id,
-      {
-        $pull: {
-          employeesOnIt : req.body.employeeId
-        }
-      },
-      { new: true },
-      (err, docs) => {
-        if (err) return res.status(400).send(err);
-      }
-    );
-    UserModel.findByIdAndUpdate(
-      req.body.employeeId,
-      {
-        $pull: {
-          mission: {
-            mission: req.params.id,
-          },
-        },
-      },
-      { new: true },
-      (err, docs) => {
-        if (!err) return res.send(docs);
-      }
-    );
-  } catch (error) {
-    return res.status(400).send(error);
-  } */
 };

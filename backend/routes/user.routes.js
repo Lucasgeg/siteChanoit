@@ -10,5 +10,6 @@ router.get("/", userController.getAllUsers);
 router.get("/:id", userController.userInfo);
 router.patch("/:id", userController.userUpdate);
 router.delete("/:id", userController.deleteUser);
+router.get("/hours/:id", userController.time);
 
 module.exports = router;
