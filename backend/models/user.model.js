@@ -59,8 +59,15 @@ const userSchema = new mongoose.Schema(
       max: 3,
       default: 3,
     },
-    missionDone: {
-      type: [String],
+    mission: {
+      type: [
+        {
+          mission: String,
+          beginAt: Date,
+          endAt: Date,
+          timestamp: Number,
+        },
+      ],
     },
     contract: {
       type: [String],

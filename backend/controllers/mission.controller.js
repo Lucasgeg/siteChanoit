@@ -1,7 +1,8 @@
 const UserModel = require("../models/user.model");
 const missionModel = require("../models/mission.model");
 const { json } = require("body-parser");
-const { findOne, findById, find } = require("../models/user.model");
+const { findOne, findById, find, modelName } = require("../models/user.model");
+const { use } = require("../routes/misson.routes");
 const ObjectID = require("mongoose").Types.ObjectId;
 
 module.exports.getAllMission = (req, res) => {
@@ -61,28 +62,55 @@ module.exports.addEmployee = (req, res) => {
   if (!ObjectID.isValid(req.params.id))
     return res.status(400).send("Unknow ID: " + req.params.id);
   try {
-    return missionModel.findByIdAndUpdate(
-      req.params.id,
-      {
-        $push: {
-          employeesOnIt: {
-            employeeId: req.body.id,
-            employeeName: req.body.name,
-            employeeSurname: req.body.surname,
-            employeeBeginAt: req.body.beginAt,
-            employeeEndAt: req.body.endAt,
-            timestamp: new Date().getTime(),
-          },
-        },
-      },
-      { new: true },
-      (err, docs) => {
-        if (!err) return res.send(docs);
-        else return res.status(400).send(err);
+    missionModel.findById(req.params.id, (err, docs) => {
+      if (!err) {
+        const userList = docs.employeesOnIt;
+        const userIsHere = userList.find(
+          (emp) => emp.employeeId === req.body.id
+        );
+        if (userIsHere) return res.send("Utilisateur déjà présent");
+        try {
+          missionModel.findByIdAndUpdate(
+            req.params.id,
+            {
+              $push: {
+                employeesOnIt: {
+                  employeeId: req.body.id,
+                  employeeBeginAt: req.body.beginAt,
+                  employeeEndAt: req.body.endAt,
+                  timestamp: new Date().getTime(),
+                },
+              },
+            },
+            { new: true },
+            (err, docs) => {
+              if (err) return res.status(400).send(err);
+            }
+          );
+          UserModel.findByIdAndUpdate(
+            req.body.id,
+            {
+              $push: {
+                mission: {
+                  mission: req.params.id,
+                  beginAt: req.params.beginAt,
+                  endAt: req.body.endAt,
+                },
+              },
+            },
+            { new: true },
+            (err, docs) => {
+              if (!err) return res.status(200).send(docs);
+              else return res.status(400).send(err);
+            }
+          );
+        } catch (error) {
+          return res.status(400).send(err);
+        }
       }
-    );
+    });
   } catch (error) {
-    return res.status(400).send(err);
+    return res.status(400).send(error);
   }
 };
 //modif employé sur une mission
@@ -114,22 +142,112 @@ module.exports.deleteEmployeeMission = (req, res) => {
   if (!ObjectID.isValid(req.params.id))
     return res.status(400).send("Unknow ID: " + req.params.id);
   try {
-    return missionModel.findByIdAndUpdate(
+    missionModel.findById(req.params.id, (err, docs) => {
+      if (!err) {
+        const userList = docs.employeesOnIt;
+        const theEmployee = userList.find(
+          (emp) => emp.employeeId === req.body.employeeId
+        );
+        if (!theEmployee) return res.status(400).send("User non trouvé");
+        else {
+          const theEmployeeId = theEmployee.employeeId;
+          missionModel.findByIdAndUpdate(
+            req.params.id,
+
+            {
+              $pull: {
+                employeesOnIt: {
+                  employeeId: theEmployeeId,
+                },
+              },
+            },
+            { new: true },
+            (err, docs) => {
+              if (err) res.status(400).send(err);
+            }
+          );
+          UserModel.findById(req.body.employeeId, (err, docs) => {
+            if (!err) {
+              const missionList = docs.mission;
+              const theMission = missionList.find(
+                (miss) => miss.mission === req.params.id
+              );
+              if (!theMission) res.send("User is not on this mission");
+              else {
+                const theMissionId = theMission.mission;
+                UserModel.findByIdAndUpdate(
+                  req.body.employeeId,
+                  {
+                    $pull: {
+                      mission: {
+                        mission: theMissionId,
+                      },
+                    },
+                  },
+                  { new: true },
+                  (err, docs) => {
+                    if (!err) res.send(docs);
+                  }
+                );
+              }
+            }
+          });
+        }
+      }
+    });
+    /* try {
+      missionModel.findByIdAndUpdate(
+        req.params.id,
+        {
+          $pull: employeeToDelete,
+        },
+        { new: true },
+        (err, docs) => {
+          if (!err) res.send(docs);
+          res.send(err);
+        }
+      );
+    } catch (error) {} */
+  } catch (error) {
+    res.status(400).send(error);
+  }
+
+  /* try {
+    missionModel.findById(req.params.id, (err, docs) => {
+      if (!err) {
+        const userList = docs.employeesOnIt;
+        const userIsHere = userList.find(
+          (emp) => emp.employeeId === req.body.id
+        );
+        if (userIsHere) return res.send("Utilisateur déjà présent"); */
+  /*  try {
+    missionModel.findByIdAndUpdate(
       req.params.id,
       {
         $pull: {
-          employeesOnIt: {
-            employeeId: req.body.employeeId,
+          employeesOnIt : req.body.employeeId
+        }
+      },
+      { new: true },
+      (err, docs) => {
+        if (err) return res.status(400).send(err);
+      }
+    );
+    UserModel.findByIdAndUpdate(
+      req.body.employeeId,
+      {
+        $pull: {
+          mission: {
+            mission: req.params.id,
           },
         },
       },
       { new: true },
       (err, docs) => {
         if (!err) return res.send(docs);
-        else return res.status(400).send(err);
       }
     );
   } catch (error) {
     return res.status(400).send(error);
-  }
+  } */
 };
