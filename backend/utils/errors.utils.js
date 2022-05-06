@@ -21,6 +21,16 @@ module.exports.signUpErrors = (err) => {
   if (err.message.includes("secu"))
     errors.secu =
       "Le numéro de sécurité sociale doit faire exactement 15 caractère";
+  if (err.code == 11000 && Object.keys(err.keyValue)[0].includes("email"))
+    errors.email = "Email déjà existant";
+  return errors;
+};
+
+module.exports.signInErrors = (err) => {
+  const errors = { email: "", password: "" };
+  if (err.message.includes("email")) errors.email = "Email Inconnu";
+  if (err.message.includes("password"))
+    errors.password = "Password non reconnu";
   return errors;
 };
 
@@ -37,5 +47,17 @@ module.exports.updateError = (err) => {
       "Le numéro de sécurité sociale doit faire 15 caractères exactement";
   if (err.message.includes("email"))
     errors.email = "L'adresse email est invalide";
+  return errors;
+};
+
+module.exports.uploadErrors = (err) => {
+  const errors = { format: "", maxSize: "" };
+
+  if (err.message.includes("invalid file"))
+    errors.format = "format incompatible";
+
+  if (err.message.includes("max size"))
+    errors.maxSize = "fichier plus grand que 5Mo";
+
   return errors;
 };
